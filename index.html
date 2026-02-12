@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VENOCYBER · URL UPTIME INSPECTOR</title>
+    <!-- Font Awesome 6 (icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* CYBER PORTFOLIO STYLE — background shifts every 1s via JS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: black; /* fallback, will be overridden by animated bg */
+            transition: background 0.8s ease;
+            padding: 16px;
+        }
+
+        .cyber-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: radial-gradient(circle at 30% 40%, #0b0f1e, #03050a);
+            animation: venoshift 1s infinite alternate; /* simultaneous colour shift every 1s */
+        }
+
+        @keyframes venoshift {
+            0% { background: radial-gradient(circle at 20% 30%, #0e0b1a, #010101); }
+            25% { background: radial-gradient(circle at 80% 70%, #1a0e1c, #0b0210); }
+            50% { background: radial-gradient(circle at 40% 80%, #10201c, #031010); }
+            75% { background: radial-gradient(circle at 70% 20%, #1f1326, #080311); }
+            100% { background: radial-gradient(circle at 90% 90%, #0c1a24, #03060c); }
+        }
+
+        /* main cyber card – glitchy, semi-transparent */
+        .inspector-panel {
+            max-width: 850px;
+            width: 100%;
+            background: rgba(8, 20, 28, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 2px solid #19f7c2;
+            box-shadow: 0 0 30px #0ef0c8, 0 0 10px #2affb6 inset;
+            border-radius: 12px;
+            padding: 35px 25px;
+            color: #c0ffff;
+            text-shadow: 0 0 4px cyan;
+            transition: 0.3s;
+            position: relative;
+            z-index: 2;
+        }
+
+        h1 {
+            font-size: 2.4rem;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #e4fffe;
+            text-shadow: 0 0 8px #0ef, 0 0 20px #0ef;
+            border-bottom: 2px dashed #4df0e6;
+            padding-bottom: 15px;
+        }
+
+        .veno-sub {
+            font-size: 0.95rem;
+            color: #a1f6e7;
+            margin-bottom: 25px;
+            border-left: 6px solid #0ef;
+            padding-left: 14px;
+            background: rgba(0,255,255,0.1);
+            line-height: 1.6;
+        }
+
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+
+        #urlInput {
+            flex: 1;
+            min-width: 220px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #17d6c2;
+            padding: 16px 20px;
+            font-size: 1.1rem;
+            color: #00ffee;
+            border-radius: 40px;
+            outline: none;
+            letter-spacing: 1.5px;
+            box-shadow: 0 0 15px #12edc0;
+            transition: all 0.2s;
+        }
+
+        #urlInput::placeholder {
+            color: #a0e7e0;
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        #urlInput:focus {
+            border-color: #ff44e6;
+            box-shadow: 0 0 25px #ff44e6, 0 0 5px white;
+        }
+
+        .cyber-button {
+            background: #000;
+            border: 3px solid #0ef;
+            color: #0ef;
+            font-weight: bold;
+            padding: 14px 32px;
+            border-radius: 40px;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 0 15px cyan;
+        }
+
+        .cyber-button:hover {
+            background: #0ef;
+            color: black;
+            border-color: #ff2bfc;
+            box-shadow: 0 0 35px #00ffff, 0 0 35px #ff00d0;
+        }
+
+        /* result container - glitch terminal */
+        .result-terminal {
+            background: rgba(2, 15, 20, 0.85);
+            border: 1px solid #2effe0;
+            padding: 22px 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            box-shadow: 0 0 20px rgba(0,255,255,0.3);
+            word-wrap: break-word;
+        }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 1px solid cyan;
+            padding-bottom: 10px;
+            margin-bottom: 18px;
+            color: #b2ffe6;
+            font-size: 1.3rem;
+        }
+
+        .live-badge {
+            background: #00eea2;
+            color: black;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            box-shadow: 0 0 10px lime;
+        }
+
+        .dead-badge {
+            background: #a10032;
+            color: white;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-weight: 900;
+            box-shadow: 0 0 15px red;
+        }
+
+        .history-line {
+            background: #04191e;
+            padding: 14px;
+            border-left: 8px solid cyan;
+            margin: 16px 0;
+            font-size: 1.1rem;
+        }
+
+        .browser-strip {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 18px;
+            margin-top: 18px;
+            background: #0b1e24;
+            padding: 18px 20px;
+            border-radius: 50px;
+            border: 1px solid #6fffe9;
+        }
+
+        .browser-icon {
+            font-size: 2.1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #bcf2ff;
+            filter: drop-shadow(0 0 8px cyan);
+        }
+
+        .browser-icon:hover {
+            transform: scale(1.3);
+            color: white;
+            filter: drop-shadow(0 0 16px #ff71e2);
+        }
+
+        .visit-tag {
+            background: transparent;
+            border: 2px dashed #0ef;
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 1rem;
+            color: #a3fff0;
+        }
+
+        .oops-msg {
+            color: #ff9898;
+            font-size: 1.6rem;
+            text-shadow: 0 0 8px red;
+            letter-spacing: 4px;
+        }
+
+        .small-note {
+            color: #a1c8c8;
+            font-size: 0.9rem;
+            margin-top: 15px;
+        }
+
+        footer {
+            margin-top: 30px;
+            color: #5edbdb;
+            text-align: right;
+            border-top: 1px solid #0a5555;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background that shifts colour every 1s (simultaneous) -->
+    <div class="cyber-bg" id="cyberBg"></div>
+
+    <div class="inspector-panel">
+        <h1>
+            <i class="fas fa-shield-halfling" style="color:#0ef;"></i> VENOCYBER 
+            <span style="font-size:1.2rem; color:#aefff2;">/uptime</span>
+        </h1>
+        <div class="veno-sub">
+            <i class="fas fa-skull"></i> URL UPTIME INSPECTOR — ENTER TARGET, ANALYZE PAST & PRESENCE. 
+            <br>MULTI‑BROWSER VERDICT WITH LAST ACTIVE STAMP.
+        </div>
+
+        <!-- input field & inspect button -->
+        <div class="input-group">
+            <input type="url" id="urlInput" placeholder="https://example.com" value="https://venocyber-archive.net">
+            <button class="cyber-button" id="inspectBtn"><i class="fas fa-eye"></i> INSPECT</button>
+        </div>
+
+        <!-- DYNAMIC RESULT AREA -->
+        <div class="result-terminal" id="resultPanel">
+            <div class="status-header">
+                <i class="fas fa-radar" style="color: #0ef;"></i> SCAN REPORT 
+                <span style="margin-left:auto; font-size:0.9rem;" id="timestampScan"></span>
+            </div>
+            <div id="verdictMessage">
+                <!-- filled by js: oops, last active, visit browser choice etc -->
+                ⚡ awaiting URL inspection ...
+            </div>
+            <div id="browserChoiceArea" style="display: none;" class="browser-strip">
+                <span class="visit-tag"><i class="fas fa-compass"></i> OPEN WITH:</span>
+                <span class="browser-icon" id="browserChrome" title="Chrome"><i class="fab fa-chrome"></i></span>
+                <span class="browser-icon" id="browserFirefox" title="Firefox"><i class="fab fa-firefox"></i></span>
+                <span class="browser-icon" id="browserEdge" title="Edge"><i class="fab fa-edge"></i></span>
+                <span class="browser-icon" id="browserSafari" title="Safari"><i class="fab fa-safari"></i></span>
+                <span class="browser-icon" id="browserOpera" title="Opera"><i class="fab fa-opera"></i></span>
+                <span class="browser-icon" id="browserBrave" title="Brave"><i class="fab fa-brave"></i></span>
+            </div>
+            <div class="small-note" id="extraMeta"></div>
+        </div>
+        <footer>
+            <i class="fas fa-terminal"></i> venocyber/portfolio · background morph 1s
+        </footer>
+    </div>
+
+    <script>
+        (function() {
+            "use strict";
+
+            // ------------------------------------------------------------
+            // BACKGROUND COLOR SHIFT every 1 second (simultaneous) 
+            // we already have infinite animation 'venoshift' 1s alternate 
+            // but also we change via setInterval to enforce simultaneous colour transitions
+            // add extra random hex overlay for venocyber feel
+            // ------------------------------------------------------------
+            const bgElement = document.getElementById('cyberBg');
+            setInterval(() => {
+                // simultaneous background shift — via style filter or extra shadow.
+                // we toggle class or modify background-image for more dynamic effect.
+                // but keep the keyframe animation, plus add extra overlay
+                const hue = Math.floor(Math.random() * 60) + 180; // cyan to magenta range
+                bgElement.style.background = `radial-gradient(circle at ${Math.floor(Math.random()*100)}% ${Math.floor(Math.random()*100)}%, rgba(${10+Math.floor(Math.random()*30)}, ${200+Math.floor(Math.random()*55)}, 220, 0.2), #000000)`;
+                // previous gradient + shift; it will mix with keyframes, gives glitch.
+            }, 1000); // every 1 sec simultaneous
+
+            // ---------- VENOCYBER DATABASE : simulated last activity ----------
+            // We store for different hosts, last active timestamps and which browser
+            const urlDatabase = new Map();
+
+            // pre-populate with some demo entries (cyber portfolio)
+            function initDB() {
+                // existing live?
+                urlDatabase.set('venocyber-archive.net', {
+                    status: 'live',        // currently reachable
+                    lastActive: '2025-02-18 14:32:09',
+                    lastBrowser: 'chrome',
+                    history: 'Active since 2023'
+                });
+                urlDatabase.set('example.com', {
+                    status: 'live',
+                    lastActive: '2025-02-19 09:12:44',
+                    lastBrowser: 'firefox',
+                    history: 'Standard placeholder'
+                });
+                // dead but existed in past
+                urlDatabase.set('defunct-cyber-lab.org', {
+                    status: 'dead',
+                    lastActive: '2024-11-03 21:17:02',
+                    lastBrowser: 'safari',
+                    history: 'Site was taken offline'
+                });
+                urlDatabase.set('old-venom-portfolio.net', {
+                    status: 'dead',
+                    lastActive: '2023-09-11 10:05:30',
+                    lastBrowser: 'edge',
+                    history: 'Archived'
+                });
+                // never existed: produce oops
+            }
+            initDB();
+
+            // helper to extract hostname from URL
+            function extractHost(urlString) {
+                try {
+                    const url = new URL(urlString);
+                    return url.hostname;
+                } catch (e) {
+                    // if invalid, treat as raw string
+                    return urlString.trim().toLowerCase().replace(/^https?:\/\//i, '').split('/')[0];
+                }
+            }
+
+            // generate random past date for unknown but existing url (simulate)
+            function generateLastActive() {
+                const year = 2023 + Math.floor(Math.random() * 3);
+                const month = String(Math.floor(Math.random() * 12) + 1).padStart(2,'0');
+                const day = String(Math.floor(Math.random() * 28) + 1).padStart(2,'0');
+                const hour = String(Math.floor(Math.random() * 24)).padStart(2,'0');
+                const min = String(Math.floor(Math.random() * 60)).padStart(2,'0');
+                const sec = String(Math.floor(Math.random() * 60)).padStart(2,'0');
+                return `${year}-${month}-${day} ${hour}:${min}:${sec}`;
+            }
+
+            function randomBrowser() {
+                const browsers = ['chrome', 'firefox', 'edge', 'safari', 'opera', 'brave'];
+                return browsers[Math.floor(Math.random() * browsers.length)];
+            }
+
+            // MAIN INSPECT FUNCTION
+            function inspectURL() {
+                const inputField = document.getElementById('urlInput');
+                let rawUrl = inputField.value.trim();
+                if (rawUrl === '') rawUrl = 'https://venocyber-archive.net'; // fallback
+
+                // ensure protocol for proper parsing
+                if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
+                    rawUrl = 'https://' + rawUrl;
+                }
+
+                let hostname;
+                try {
+                    hostname = new URL(rawUrl).hostname;
+                } catch (e) {
+                    hostname = rawUrl.toLowerCase().replace(/^https?:\/\//i, '').split('/')[0];
+                }
+
+                // lookup in DB
+                const record = urlDatabase.get(hostname);
+                
+                const verdictDiv = document.getElementById('verdictMessage');
+                const browserArea = document.getElementById('browserChoiceArea');
+                const extraMeta = document.getElementById('extraMeta');
+                const timestampSpan = document.getElementById('timestampScan');
+
+                // set scan time
+                const nowStr = new Date().toLocaleString('sv-SE'); // YYYY-MM-DD HH:MM:SS
+                timestampSpan.innerText = `⚡ ${nowStr}`;
+
+                // handle non-existent (never in db) -> oops the url doesn't exist
+                if (!record) {
+                    // BUT we also simulate some URLs that never existed
+                    // if hostname includes "neverexist" or "idontexist" or by random? 
+                    // for better UX, we treat all non-listed hosts as "never existed" 
+                    // except some we manually want to appear as dead? we check if ends with .live etc? 
+                    // we stick to rule: if not in db => oops.
+                    verdictDiv.innerHTML = `<span class="oops-msg"><i class="fas fa-exclamation-triangle"></i> OOPS! THE URL DOESN'T EXIST</span>
+                                            <p style="color:#bbc; margin-top:10px;">⛔ no record found in venocyber archive for <strong style="color:#ffa9a9;">${hostname}</strong></p>`;
+                    browserArea.style.display = 'none';  // no visit buttons
+                    extraMeta.innerHTML = '';
+                    return;
+                }
+
+                // RECORD EXISTS
+                const status = record.status; // 'live' or 'dead'
+                const lastActive = record.lastActive || 'unknown';
+                const lastBrowser = record.lastBrowser || 'chrome';
+
+                // If dead - show when was last active on which browser
+                if (status === 'dead') {
+                    verdictDiv.innerHTML = `
+                        <span style="display:flex; gap:14px; align-items:center;">
+                            <span class="dead-badge"><i class="fas fa-skull"></i> DEAD / OFFLINE</span> 
+                            <span style="color:#95f0e6;"><i class="fas fa-history"></i> LAST ACTIVE: ${lastActive}</span>
+                        </span>
+                        <div class="history-line">
+                            <i class="fas fa-browser"></i> last seen on <strong style="color:#5effe7; text-transform:uppercase;">${lastBrowser}</strong> browser · ${record.history || 'no additional trace'}
+                        </div>
+                    `;
+                    // we still allow visit? but site is dead. we might show browsers? design: if user click visit site - pop up browsers (we do that always for live/dead? but for dead we still give visit option? yes but show last active. We'll show browser choice anyway but indicate site may be down. 
+                    // still offer "visit site" as popup browser choices
+                    browserArea.style.display = 'flex';
+                    extraMeta.innerHTML = '⚠️ site is dead — last active date shown. you can still attempt visit.';
+                } else { // LIVE
+                    verdictDiv.innerHTML = `
+                        <span style="display:flex; gap:14px; align-items:center;">
+                            <span class="live-badge"><i class="fas fa-bolt"></i> LIVE / ONLINE</span> 
+                            <span style="color:#ccffd0;"><i class="fas fa-check-circle"></i> last active: ${lastActive}</span>
+                        </span>
+                        <div class="history-line">
+                            <i class="fas fa-check-double"></i> verified on <strong style="color:#74fdd4;">${lastBrowser}</strong> · ${record.history || 'reachable'}
+                        </div>
+                    `;
+                    browserArea.style.display = 'flex';
+                    extraMeta.innerHTML = '✅ site is live — click browser icon to open.';
+                }
+
+                // attach the target URL to each browser icon for opening (visit site)
+                // we need to store the current url for opening
+                const currentUrl = rawUrl; // full URL
+
+                // define browser openers
+                const chromeIcon = document.getElementById('browserChrome');
+                const firefoxIcon = document.getElementById('browserFirefox');
+                const edgeIcon = document.getElementById('browserEdge');
+                const safariIcon = document.getElementById('browserSafari');
+                const operaIcon = document.getElementById('browserOpera');
+                const braveIcon = document.getElementById('browserBrave');
+
+                // Remove previous listeners (cloning and replacing fresh)
+                function renewIcon(iconElement, browserName) {
+                    const newIcon = iconElement.cloneNode(true);
+                    iconElement.parentNode.replaceChild(newIcon, iconElement);
+                    return newIcon;
+                }
+
+                const newChrome = renewIcon(chromeIcon, 'chrome');
+                const newFirefox = renewIcon(firefoxIcon, 'firefox');
+                const newEdge = renewIcon(edgeIcon, 'edge');
+                const newSafari = renewIcon(safariIcon, 'safari');
+                const newOpera = renewIcon(operaIcon, 'opera');
+                const newBrave = renewIcon(braveIcon, 'brave');
+
+                // re-assign IDs
+                newChrome.id = 'browserChrome';
+                newFirefox.id = 'browserFirefox';
+                newEdge.id = 'browserEdge';
+                newSafari.id = 'browserSafari';
+                newOpera.id = 'browserOpera';
+                newBrave.id = 'browserBrave';
+
+                // helper to open URL in specific browser
+                function openWithBrowser(browser) {
+                    let protocol;
+                    switch(browser) {
+                        case 'chrome':
+                            // chrome uses https by default
+                            window.open(currentUrl, '_blank');
+                            break;
+                        case 'firefox':
+                            window.open(currentUrl, '_blank');
+                            break;
+                        case 'edge':
+                            window.open(currentUrl, '_blank');
+                            break;
+                        case 'safari':
+                            window.open(currentUrl, '_blank');
+                            break;
+                        case 'opera':
+                            window.open(currentUrl, '_blank');
+                            break;
+                        case 'brave':
+                            window.open(currentUrl, '_blank');
+                            break;
+                        default: window.open(currentUrl, '_blank');
+                    }
+                    // most browsers respect default. we can't force a specific browser via pure JS, but we emulate choice. In a real scenario we would use custom protocols. For Venocyber portfolio we simulate by opening in new tab, and show an alert.
+                    alert(`[VENOCYBER] opening ${currentUrl} with ${browser} (default system browser may handle).`);
+                }
+
+                newChrome.addEventListener('click', (e) => openWithBrowser('chrome'));
+                newFirefox.addEventListener('click', (e) => openWithBrowser('firefox'));
+                newEdge.addEventListener('click', (e) => openWithBrowser('edge'));
+                newSafari.addEventListener('click', (e) => openWithBrowser('safari'));
+                newOpera.addEventListener('click', (e) => openWithBrowser('opera'));
+                newBrave.addEventListener('click', (e) => openWithBrowser('brave'));
+
+                // reassign global references if needed
+                document.getElementById('browserChoiceArea').style.display = 'flex';
+            }
+
+            // initial demo on page load: show a sample result (venocyber-archive.net)
+            window.addEventListener('DOMContentLoaded', () => {
+                // set default value
+                const urlInput = document.getElementById('urlInput');
+                urlInput.value = 'https://venocyber-archive.net';
+                inspectURL(); // default scan
+            });
+
+            // attach inspect button
+            document.getElementById('inspectBtn').addEventListener('click', inspectURL);
+
+            // also when pressing enter in input
+            document.getElementById('urlInput').addEventListener('keypress', (e) => {
+                if(e.key === 'Enter') inspectURL();
+            });
+
+            // we also need to manually handle 'visit site' via browser icons.
+            // already done inside inspectURL, but we also need to call on init.
+            // also ensure that browser popup appears only if we have results.
+
+            // additionally, we want to handle scenario: "if it was exist but currently dead show when last active which browser"
+            // we already do that via record.status==='dead'
+
+            // For non-existing: we already do oops.
+
+            // to demonstrate: let's add additional custom entries for better demo
+            // add a dead site:
+            urlDatabase.set('abandoned-project.io', {
+                status: 'dead',
+                lastActive: '2024-12-01 04:20:00',
+                lastBrowser: 'brave',
+                history: 'Last active on brave before shutdown'
+            });
+            urlDatabase.set('never-exist-today.xyz', null); // but we need to set not present -> oops.
+            // We'll not add it to simulate non-existent
+
+            // Provide possibility: user types unknown: oops
+        })();
+    </script>
+
+    <!-- 
+        Explanation: 
+        - Background colour shifts every 1s via setInterval + keyframe animation.
+        - User enters URL, system inspects from simulated DB. 
+        - If host not in DB: 'oops the url doesn't exist'.
+        - If exist: shows live/dead, last active date and last known browser.
+        - Visit site button: actually we integrated browser icon strip (always visible for valid URLs). User clicks on browser icon → opens site in new tab with pop-up like behaviour.
+        - Icons: font awesome 6 (chrome, firefox, edge, safari, opera, brave). 
+        - Cyber portfolio vibe: glitchy, neon, blinking.
+    -->
+</body>
+</html>
